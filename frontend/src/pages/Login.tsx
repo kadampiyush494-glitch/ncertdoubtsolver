@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { User, GraduationCap, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Grade, Subject, Language, UserRole } from '../types';
+import { useNavigate } from 'react-router-dom';
 
-interface LoginProps {
-  onNavigate: (page: string) => void;
-}
-
-export function Login({ onNavigate }: LoginProps) {
+export function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [role, setRole] = useState<UserRole | null>(null);
   const [name, setName] = useState('');
   const [grade, setGrade] = useState<Grade>('8');
@@ -28,16 +27,21 @@ export function Login({ onNavigate }: LoginProps) {
         preferredLanguage: language,
         preferredSubject: subject,
       });
-      onNavigate('chat');
-    } else if (role === 'admin') {
+
+      navigate('/chat'); // ✅ React Router
+    }
+
+    if (role === 'admin') {
       login({
         role: 'admin',
         preferredLanguage: language,
       });
-      onNavigate('admin');
+
+      navigate('/admin'); // ✅ React Router
     }
   };
 
+  // ================= ROLE SELECTION =================
   if (!role) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4">
@@ -72,6 +76,7 @@ export function Login({ onNavigate }: LoginProps) {
     );
   }
 
+  // ================= FORM =================
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
@@ -87,34 +92,30 @@ export function Login({ onNavigate }: LoginProps) {
             {role === 'student' ? 'Student Setup' : 'Admin Login'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
-            {role === 'student' ? 'Help us personalize your experience' : 'Configure your preferences'}
+            {role === 'student'
+              ? 'Help us personalize your experience'
+              : 'Configure your preferences'}
           </p>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Name (Optional)
-              </label>
+              <label className="block text-sm font-medium mb-2">Name (Optional)</label>
               <input
-                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 border rounded-lg"
               />
             </div>
 
             {role === 'student' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Grade
-                </label>
+                <label className="block text-sm font-medium mb-2">Grade</label>
                 <select
                   value={grade}
                   onChange={(e) => setGrade(e.target.value as Grade)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border rounded-lg"
                 >
-                  {grades.map((g) => (
+                  {grades.map(g => (
                     <option key={g} value={g}>Grade {g}</option>
                   ))}
                 </select>
@@ -122,33 +123,30 @@ export function Login({ onNavigate }: LoginProps) {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                Preferred Language
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <Globe className="w-4 h-4" /> Preferred Language
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 border rounded-lg"
               >
-                {languages.map((lang) => (
-                  <option key={lang} value={lang}>{lang}</option>
+                {languages.map(l => (
+                  <option key={l} value={l}>{l}</option>
                 ))}
               </select>
             </div>
 
             {role === 'student' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Preferred Subject
-                </label>
+                <label className="block text-sm font-medium mb-2">Preferred Subject</label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value as Subject)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-4 py-3 border rounded-lg"
                 >
-                  {subjects.map((subj) => (
-                    <option key={subj} value={subj}>{subj}</option>
+                  {subjects.map(s => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
@@ -156,7 +154,7 @@ export function Login({ onNavigate }: LoginProps) {
 
             <button
               onClick={handleContinue}
-              className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
+              className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg"
             >
               Continue
             </button>
@@ -167,7 +165,13 @@ export function Login({ onNavigate }: LoginProps) {
   );
 }
 
-function RoleCard({ icon, title, description, color, onClick }: {
+function RoleCard({
+  icon,
+  title,
+  description,
+  color,
+  onClick,
+}: {
   icon: React.ReactNode;
   title: string;
   description: string;
@@ -177,17 +181,14 @@ function RoleCard({ icon, title, description, color, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg hover:shadow-2xl transition-all border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 text-left group"
+      className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg border-2 hover:border-blue-500 text-left"
     >
-      <div className={`w-16 h-16 bg-gradient-to-br ${color} rounded-lg flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+      <div className={`w-16 h-16 bg-gradient-to-br ${color} rounded-lg flex items-center justify-center text-white mb-4`}>
         {icon}
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-        {title}
-      </h3>
-      <p className="text-gray-600 dark:text-gray-400">
-        {description}
-      </p>
+      <h3 className="text-2xl font-bold mb-2">{title}</h3>
+      <p className="text-gray-600">{description}</p>
     </button>
   );
 }
+

@@ -1,16 +1,20 @@
-const BACKEND_URL = "http://127.0.0.1:8001";
-
+// frontend/src/services/api.ts
 export async function askNCERT(question: string) {
-  const response = await fetch(
-    `${BACKEND_URL}/ask?question=${encodeURIComponent(question)}`,
-    {
-      method: "POST",
+  try {
+    const response = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch answer');
     }
-  );
 
-  if (!response.ok) {
-    throw new Error("Backend error");
+    const data: { answers: string[] } = await response.json(); // make TypeScript know the type
+    return data; // ✅ return the object containing 'answers'
+  } catch (error) {
+    console.error(error);
+    return { answers: ['Error fetching answer'] }; // fallback so Chat.tsx can always read 'answers'
   }
-
-  return await response.json();
 }

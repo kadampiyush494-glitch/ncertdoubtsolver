@@ -1,21 +1,35 @@
+import { OCRUpload } from '../components/OCRUpload';
+import { VoiceInput } from '../components/VoiceInput';
+import { Volume2, VolumeX } from 'lucide-react';
+
+
+import { Send, Menu, X, Image as ImageIcon, Trash2, Clock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { Send, Menu, X, Mic, Image as ImageIcon, Trash2, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChatMessage } from '../components/ChatMessage';
 import { ChatMessage as ChatMessageType, Grade, Subject, Language, ChatSession, ExplanationLevel } from '../types';
 import { askNCERT } from '../services/api';
-
 export function Chat() {
+
   const { user } = useAuth();
+
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const [selectedGrade, setSelectedGrade] = useState<Grade>(user?.grade || '8');
   const [selectedSubject, setSelectedSubject] = useState<Subject>(user?.preferredSubject || 'Science');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(user?.preferredLanguage || 'English');
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+
+
+  const [sessions] = useState<ChatSession[]>([]);
+
+ 
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
 
   const grades: Grade[] = ['5', '6', '7', '8', '9', '10'];
   const subjects: Subject[] = ['Math', 'Science', 'Social Science', 'English', 'Hindi', 'Urdu'];
@@ -57,6 +71,36 @@ export function Chat() {
     };
   };
 
+
+
+ 
+
+
+   const speakText = (text: string) => {
+  if (!voiceEnabled || !window.speechSynthesis) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  const langMap: Record<string, string> = {
+    English: 'en-US',
+    Hindi: 'hi-IN',
+    Urdu: 'ur-PK',
+    Tamil: 'ta-IN',
+    Telugu: 'te-IN',
+    Marathi: 'mr-IN',
+    Bengali: 'bn-IN',
+  };
+
+  utterance.lang = langMap[selectedLanguage] || 'en-US';
+  utterance.rate = 1;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.cancel(); // stop previous speech
+  window.speechSynthesis.speak(utterance);
+};
+
+
+
   const handleSend = async () => {
   if (!input.trim() || isLoading) return;
 
@@ -81,29 +125,38 @@ export function Chat() {
       timestamp: new Date(),
       feedbackGiven: false,
     };
-
+// add AI message
     setMessages(prev => [...prev, aiMessage]);
+    // Speak the AI response
+    speakText(aiMessage.content);
   } catch (error) {
-    setMessages(prev => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: '❌ Error connecting to backend',
-        timestamp: new Date(),
-        feedbackGiven: false,
-      },
-    ]);
+    const fallbackResponse = generateMockResponse(input);
+    setMessages(prev => [...prev, fallbackResponse]);
   }
 
   setIsLoading(false);
 };
 
-  const handleFeedback = (messageId: string, type: 'helpful' | 'incorrect' | 'wrong-language', comment?: string) => {
-    setMessages(prev => prev.map(msg =>
-      msg.id === messageId ? { ...msg, feedbackGiven: true } : msg
-    ));
-  };
+
+  const handleFeedback = (
+  messageId: string,
+  type: 'helpful' | 'incorrect' | 'wrong-language',
+  comment?: string
+) => {
+  setMessages(prev =>
+    prev.map(msg =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            feedbackGiven: true,
+            feedbackType: type,       // ✅ USE IT
+            feedbackComment: comment, // ✅ OPTIONAL
+          }
+        : msg
+    )
+  );
+};
+
 
   const handleRegenerateWithLevel = (level: ExplanationLevel) => {
     console.log('Regenerate with level:', level);
@@ -224,25 +277,30 @@ export function Chat() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            >
-              <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Student Doubt Assistant</h1>
-          </div>
-          <button
-            onClick={clearChat}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Clear Chat</span>
-          </button>
-        </div>
+      <div className="flex items-center gap-2">
+  {/* 🔊 AI Voice Toggle */}
+  <button
+    onClick={() => setVoiceEnabled(v => !v)}
+    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+    title={voiceEnabled ? 'Mute AI voice' : 'Enable AI voice'}
+  >
+    {voiceEnabled ? (
+      <Volume2 className="w-5 h-5 text-blue-600" />
+    ) : (
+      <VolumeX className="w-5 h-5 text-gray-500" />
+    )}
+  </button>
+
+  {/* 🗑 Clear Chat */}
+  <button
+    onClick={clearChat}
+    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+  >
+    <Trash2 className="w-4 h-4" />
+    <span className="hidden sm:inline">Clear Chat</span>
+  </button>
+</div>
+
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {messages.length === 0 ? (
@@ -304,34 +362,40 @@ export function Chat() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-2">
               <div className="flex-1 relative">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Ask your doubt here..."
-                  className="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                  rows={1}
-                  style={{ minHeight: '52px', maxHeight: '120px' }}
-                />
-                <div className="absolute right-2 bottom-2 flex gap-1">
-                  <button
-                    className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                    title="Upload image"
-                  >
-                    <ImageIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                    title="Voice input"
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-                </div>
+                {/* ✅ OCR Upload (image → text) */}
+                 <OCRUpload onTextExtracted={(text) => setInput(text)} />
+             <textarea
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }}
+  placeholder="Ask your doubt here..."
+  className="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+  rows={1}
+/>
+
+<div className="absolute right-2 bottom-2 flex gap-1">
+  {/* ✅ VOICE INPUT BUTTON */}
+  <VoiceInput
+    selectedLanguage={selectedLanguage}
+    onTranscript={(text) =>
+      setInput(prev => (prev ? prev + ' ' + text : text))
+    }
+    onEnd={handleSend}
+  />
+
+  <button
+    className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+    title="Upload image"
+  >
+    <ImageIcon className="w-5 h-5" />
+  </button>
+</div>
+  
               </div>
               <button
                 onClick={handleSend}
@@ -348,6 +412,7 @@ export function Chat() {
           </div>
         </div>
       </div>
-    </div>
+    
   );
+  
 }

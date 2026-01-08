@@ -1,13 +1,13 @@
 import { BookOpen, Brain, Globe, FileText, ArrowRight, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface HomeProps {
-  onNavigate: (page: string) => void;
-}
+export function Home() {
+  const navigate = useNavigate();
 
-export function Home({ onNavigate }: HomeProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Hero Section */}
         <section className="py-20 md:py-32">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -25,14 +25,14 @@ export function Home({ onNavigate }: HomeProps) {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => onNavigate('login')}
+                  onClick={() => navigate('/login')}
                   className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   Start Learning
                   <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => onNavigate('chat')}
+                  onClick={() => navigate('/chat')}
                   className="px-8 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-semibold rounded-xl transition-all hover:border-blue-500 dark:hover:border-blue-500"
                 >
                   Try Demo
@@ -70,6 +70,7 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
         </section>
 
+        {/* Features Section */}
         <section className="py-20">
           <div className="grid md:grid-cols-4 gap-6">
             <FeatureCard
@@ -99,6 +100,7 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
         </section>
 
+        {/* Benefits Section */}
         <section className="py-20 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-3xl px-8 md:px-16">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -118,6 +120,7 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
         </section>
 
+        {/* CTA Section */}
         <section className="py-20 text-center">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
             Ready to Clear Your Doubts?
@@ -126,7 +129,7 @@ export function Home({ onNavigate }: HomeProps) {
             Join thousands of students using AI-powered learning to master their NCERT curriculum
           </p>
           <button
-            onClick={() => onNavigate('login')}
+            onClick={() => navigate('/login')}
             className="px-10 py-5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
           >
             Start Solving Doubts
@@ -166,3 +169,4 @@ function BenefitItem({ text }: { text: string }) {
     </div>
   );
 }
+
