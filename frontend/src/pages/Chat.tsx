@@ -1,15 +1,16 @@
 import { OCRUpload } from '../components/OCRUpload';
 import { VoiceInput } from '../components/VoiceInput';
 import { Volume2, VolumeX } from 'lucide-react';
-
-
-import { Send, Menu, X, Image as ImageIcon, Trash2, Clock } from 'lucide-react';
+import { Send, X, Image as ImageIcon, Trash2, Clock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ChatMessage } from '../components/ChatMessage';
+import { ChatMessage as ChatMessageComponent } from '../components/ChatMessage';
+
+
 import { ChatMessage as ChatMessageType, Grade, Subject, Language, ChatSession, ExplanationLevel } from '../types';
 import { askNCERT } from '../services/api';
-export function Chat() {
+
+export function Chat(){
 
   const { user } = useAuth();
 
@@ -17,6 +18,8 @@ export function Chat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
 
   const [selectedGrade, setSelectedGrade] = useState<Grade>(user?.grade || '8');
   const [selectedSubject, setSelectedSubject] = useState<Subject>(user?.preferredSubject || 'Science');
@@ -102,40 +105,39 @@ export function Chat() {
 
 
   const handleSend = async () => {
-  if (!input.trim() || isLoading) return;
+  if (!input.trim()) return;
 
-  const userMessage: ChatMessageType = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: input,
-    timestamp: new Date(),
-  };
-
-  setMessages(prev => [...prev, userMessage]);
-  setInput('');
   setIsLoading(true);
+  setError(null);
 
   try {
-    const res = await askNCERT(input);
+    const answers = await askNCERT(input);
 
     const aiMessage: ChatMessageType = {
       id: Date.now().toString(),
-      role: 'assistant',
-      content: res.answers?.join('\n\n') || 'No answer found',
+      role: "assistant",
+      content:
+        answers.answers.length > 0
+          ? answers.answers.join("\n\n")
+          : "No answer found",
       timestamp: new Date(),
       feedbackGiven: false,
     };
-// add AI message
-    setMessages(prev => [...prev, aiMessage]);
-    // Speak the AI response
-    speakText(aiMessage.content);
-  } catch (error) {
-    const fallbackResponse = generateMockResponse(input);
-    setMessages(prev => [...prev, fallbackResponse]);
-  }
 
-  setIsLoading(false);
+    setMessages(prev => [...prev, aiMessage]);
+    speakText(aiMessage.content);
+
+  } catch {
+    setError("Backend unavailable. Showing demo answer.");
+    setMessages(prev => [...prev, generateMockResponse(input)]);
+  } finally {
+    setIsLoading(false);
+  }
 };
+
+
+
+
 
 
   const handleFeedback = (
@@ -303,7 +305,19 @@ export function Chat() {
 
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {messages.length === 0 ? (
+           {/* LOADING */}
+  {isLoading && (
+    <p className="text-gray-500 dark:text-gray-400 mb-2">Thinking...</p>
+  )}
+
+  {error && (
+    <div className="mb-2 rounded-lg bg-red-100 text-red-700 px-4 py-2 text-sm">
+      {error}
+    </div>
+  )}
+
+  {messages.length === 0 ? (
+
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-md">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -320,6 +334,7 @@ export function Chat() {
                     'What is photosynthesis?',
                     'Explain Pythagoras theorem',
                     'Who wrote the Indian Constitution?',
+                    'What is the formula for Gravtaional Force?',
                   ].map((suggestion, idx) => (
                     <button
                       key={idx}
@@ -335,7 +350,7 @@ export function Chat() {
           ) : (
             <div className="max-w-4xl mx-auto">
               {messages.map((message) => (
-                <ChatMessage
+                <ChatMessageComponent
                   key={message.id}
                   message={message}
                   onFeedback={handleFeedback}
@@ -363,7 +378,7 @@ export function Chat() {
             <div className="flex items-end gap-2">
               <div className="flex-1 relative">
                 {/* ✅ OCR Upload (image → text) */}
-                 <OCRUpload onTextExtracted={(text) => setInput(text)} />
+                 <OCRUpload onTextExtracted={(text: string) => setInput(text)} />
              <textarea
   value={input}
   onChange={(e) => setInput(e.target.value)}
@@ -373,7 +388,7 @@ export function Chat() {
       handleSend();
     }
   }}
-  placeholder="Ask your doubt here..."
+  placeholder="Ask your doubt here from the NCERT..."
   className="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
   rows={1}
 />
@@ -385,7 +400,7 @@ export function Chat() {
     onTranscript={(text) =>
       setInput(prev => (prev ? prev + ' ' + text : text))
     }
-    onEnd={handleSend}
+   
   />
 
   <button
@@ -411,8 +426,10 @@ export function Chat() {
             </p>
           </div>
         </div>
-      </div>
+     </div>
     
   );
   
 }
+
+
